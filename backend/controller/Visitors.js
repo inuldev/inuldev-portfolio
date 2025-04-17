@@ -1,5 +1,4 @@
 import requestIp from "request-ip";
-
 import { AllVisitor } from "../model/AllVisitor.js";
 import { Visitor } from "../model/Visitors.js";
 
@@ -45,14 +44,12 @@ export const incCounter = async (req, res) => {
       visitor.total += 1;
       visitor.timestamp.unshift(Date.now());
       await visitor.save();
-
       data = { ...data, visitors: visitor };
     }
 
     const uniqueVisitorCount = await Visitor.countDocuments({});
-
     data = { ...data, uniqueVisitor: { total: uniqueVisitorCount } };
-    // console.log(data);
+
     res.status(200).json({
       success: true,
       message: "Incremented by one",

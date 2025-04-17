@@ -65,7 +65,7 @@ app.get("/health", (req, res) => {
 
 // Import routes
 import { userRoute } from "./routes/User.js";
-import { visitorRoute } from "./routes/Visitor.js";
+import { visitorRoute } from "./routes/Visitors.js";
 
 // Route middlewares
 app.use("/admin", userRoute);

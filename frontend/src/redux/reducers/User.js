@@ -22,33 +22,6 @@ export const userReducer = createReducer(initialState, {
   },
 });
 
-export const visitorStatsReducer = createReducer(
-  {},
-  {
-    INC_VISITOR_COUNT_REQUEST: (state) => {
-      state.loading = true;
-    },
-    INC_VISITOR_COUNT_SUCCESS: (state, action) => {
-      state.loading = false;
-      state.message = action.payload.message;
-      state.visitors = action.payload.visitors;
-      state.allVisitors = action.payload.allVisitors;
-      state.uniqueVisitor = action.payload.uniqueVisitor;
-    },
-    INC_VISITOR_COUNT_FAILURE: (state, action) => {
-      state.loading = false;
-      state.error = action.payload;
-    },
-
-    CLEAR_ERROR: (state) => {
-      state.error = null;
-    },
-    CLEAR_MESSAGE: (state) => {
-      state.message = null;
-    },
-  }
-);
-
 export const loginReducer = createReducer(
   {},
   {

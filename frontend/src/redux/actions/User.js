@@ -8,31 +8,6 @@ const client = axios.create({
   },
 });
 
-export const incVisitCount = () => async (dispatch) => {
-  try {
-    dispatch({
-      type: "INC_VISITOR_COUNT_REQUEST",
-    });
-
-    const { data } = await client.get("/admin/inccount");
-
-    dispatch({
-      type: "INC_VISITOR_COUNT_SUCCESS",
-      payload: {
-        message: data.message,
-        visitors: data.vistorData.visitors,
-        allVisitors: data.vistorData.allVisitors,
-        uniqueVisitor: data.vistorData.uniqueVisitor,
-      },
-    });
-  } catch (error) {
-    dispatch({
-      type: "INC_VISITOR_COUNT_FAILURE",
-      payload: error.response.data.message,
-    });
-  }
-};
-
 export const getUser = () => async (dispatch) => {
   try {
     dispatch({
@@ -119,7 +94,6 @@ export const loadUser = () => async (dispatch) => {
       type: "LOAD_USER_FAILURE",
       payload: error.response?.data?.message || "Authentication Failed",
     });
-    // Redirect ke login jika token tidak valid
     if (error.response?.status === 400) {
       dispatch(logout());
     }

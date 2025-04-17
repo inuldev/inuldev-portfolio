@@ -40,7 +40,8 @@ import HomeDetails from "./components/AdminPanel/Components/HomeDetails";
 import Feedbacks from "./components/AdminPanel/Components/Feedbacks";
 import SocialMediaLinks from "./components/AdminPanel/Components/SocialMediaLinks";
 
-import { getUser, incVisitCount, loadUser } from "./redux/actions/User";
+import { getUser, loadUser } from "./redux/actions/User";
+import { incVisitCount } from "./redux/actions/visitorActions";
 
 import "bootstrap/dist/css/bootstrap.min.css";
 import "react-toastify/dist/ReactToastify.css";
@@ -63,7 +64,6 @@ const App = () => {
         await dispatch(incVisitCount());
       } catch (error) {
         console.error("Failed to load user data:", error);
-        // Handle error appropriately
       } finally {
         setLoading(false);
       }

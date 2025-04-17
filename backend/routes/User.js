@@ -31,7 +31,7 @@ import {
   updateLoginDetails,
   updateSkillImages,
 } from "../controller/User.js";
-import { incCounter } from "../controller/Visitor.js";
+import { incCounter } from "../controller/Visitors.js";
 import { isAuthenticated } from "../middlewares/auth.js";
 
 export const userRoute = express.Router();

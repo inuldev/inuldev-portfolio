@@ -80,21 +80,21 @@ Aplikasi ini adalah portfolio pribadi yang memungkinkan pemiliknya untuk menampi
 
 ```
 mern-portfolio/
-├── backend/                # Server-side code
+├── backend/                # Kode server-side
 │   ├── config/             # Konfigurasi database dan environment
 |   |   ├── config.example.env # Template konfigurasi
 |   |   ├── config.development.env # Konfigurasi development (diabaikan git)
 |   |   ├── config.production.env # Konfigurasi production (diabaikan git)
 |   |   ├── configLoader.js # Fungsi untuk memuat konfigurasi
 |   |   └── database.js     # Fungsi untuk koneksi database
-│   ├── controller/         # Logic aplikasi
-│   ├── middlewares/        # Middleware Express
+|   ├── controller/         # Controller untuk rute API
+│   ├── middlewares/        # Middleware untuk rute API
 │   ├── model/              # Model data MongoDB
-│   ├── routes/             # API routes
-│   ├── app.js              # Konfigurasi Express
+│   ├── routes/             # Rute API
+│   ├── app.js              # Konfigurasi server
 │   └── server.js           # Entry point server
 │
-└── frontend/               # Client-side code
+└── frontend/               # Kode client-side
     ├── public/             # Static files
     └── src/
         ├── assets/         # Gambar dan aset statis

@@ -1,0 +1,156 @@
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  BrowserRouter as Router,
+  Navigate,
+  Route,
+  Routes,
+} from "react-router-dom";
+import { ToastContainer } from "react-toastify";
+
+import Bottombar from "./components/BottomBar/Bottombar";
+import Footer from "./components/Footer/Footer";
+import NavBar from "./components/NavBar/NavBar";
+import ProgressBar from "./components/ProgressBar/ProgressBar";
+import PreLoader from "./components/PreLoader/PreLoader";
+import DynamicTitle from "./components/SubComponents/DynamicTitle";
+// import Cursor from "./components/Cursor/Cursor";
+
+import HomePage from "./components/Pages/HomePage";
+import AboutMePage from "./components/Pages/AboutMePage";
+import EducationWorkPage from "./components/Pages/EducationWorkPage";
+import SkillPage from "./components/Pages/SkillPage";
+import ProjectPage from "./components/Pages/ProjectPage";
+import ContactPage from "./components/Pages/ContactPage";
+import LoginPage from "./components/Pages/LoginPage";
+import VisitorStat from "./components/VisitorStat/VisitorStat";
+import ProtectedRoutes from "./components/ProtectedRoutes/ProtectedRoutes";
+
+import AdminPanel from "./components/AdminPanel/AdminPanel";
+import EducationTimeLine from "./components/AdminPanel/Components/EducationTimeLine";
+import WorkTimeLine from "./components/AdminPanel/Components/WorkTimeLine";
+import Skill from "./components/AdminPanel/Components/Skill";
+import KnownLanguage from "./components/AdminPanel/Components/KnownLanguage";
+import FrontendProject from "./components/AdminPanel/Components/FrontendProject";
+import FullstackProject from "./components/AdminPanel/Components/FullstackProject";
+import BackendProject from "./components/AdminPanel/Components/BackendProject";
+import LoginDetails from "./components/AdminPanel/Components/LoginDetails";
+import AboutDetails from "./components/AdminPanel/Components/AboutDetails";
+import SkillImages from "./components/AdminPanel/Components/SkillImage";
+import HomeDetails from "./components/AdminPanel/Components/HomeDetails";
+import Feedbacks from "./components/AdminPanel/Components/Feedbacks";
+import SocialMediaLinks from "./components/AdminPanel/Components/SocialMediaLinks";
+
+import { getUser, incVisitCount, loadUser } from "./redux/actions/User";
+
+import "bootstrap/dist/css/bootstrap.min.css";
+import "react-toastify/dist/ReactToastify.css";
+import "./App.css";
+
+const App = () => {
+  const [loading, setLoading] = useState(true);
+
+  const { isAuthenticated } = useSelector((state) => state.login);
+  const { user } = useSelector((state) => state.user);
+
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    const loadData = async () => {
+      await dispatch(getUser());
+      await dispatch(loadUser());
+      await dispatch(incVisitCount());
+      // await dispatch({type: "CLEAR_ERROR"})
+      setLoading(false);
+    };
+    loadData();
+  }, [dispatch]);
+
+  return (
+    <Router>
+      {loading ? (
+        <PreLoader />
+      ) : (
+        <>
+          {/* <Cursor /> */}
+          <DynamicTitle />
+          <ProgressBar />
+
+          <NavBar />
+
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/about-me" element={<AboutMePage user={user} />} />
+            <Route
+              path="/education-work"
+              element={<EducationWorkPage user={user} />}
+            />
+            <Route path="/skills" element={<SkillPage user={user} />} />
+            <Route path="/projects" element={<ProjectPage user={user} />} />
+            <Route path="/contact" element={<ContactPage />} />
+
+            <Route
+              path="/login"
+              element={
+                isAuthenticated ? <Navigate to="/admin" /> : <LoginPage />
+              }
+            />
+            <Route
+              element={<ProtectedRoutes isAuthenticated={isAuthenticated} />}
+            >
+              <Route path="/admin" element={<AdminPanel />} />
+
+              <Route path="/update/login-details" element={<LoginDetails />} />
+              <Route path="/update/home-details" element={<HomeDetails />} />
+              <Route path="/update/about-details" element={<AboutDetails />} />
+              <Route path="/update/skill-images" element={<SkillImages />} />
+              <Route
+                path="/update/education-timeline"
+                element={<EducationTimeLine />}
+              />
+              <Route path="/update/work-timeline" element={<WorkTimeLine />} />
+              <Route path="/update/skills" element={<Skill />} />
+              <Route
+                path="/update/known-language"
+                element={<KnownLanguage />}
+              />
+              <Route
+                path="/update/frontend-project"
+                element={<FrontendProject />}
+              />
+              <Route
+                path="/update/fullstack-project"
+                element={<FullstackProject />}
+              />
+              <Route
+                path="/update/backend-project"
+                element={<BackendProject />}
+              />
+              <Route
+                path="/update/social-link"
+                element={<SocialMediaLinks />}
+              />
+
+              <Route path="/view/feedbacks" element={<Feedbacks />} />
+            </Route>
+
+            <Route path="*" element={<Navigate to="/login" />} />
+          </Routes>
+
+          <Footer user={user} />
+          <Bottombar />
+          <VisitorStat />
+
+          <ToastContainer
+            theme="colored"
+            position="bottom-right"
+            style={{ fontSize: "14px" }}
+            autoClose={2000}
+          />
+        </>
+      )}
+    </Router>
+  );
+};
+
+export default App;

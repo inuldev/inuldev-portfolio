@@ -1,0 +1,21 @@
+div.progress-bar111 {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: linear-gradient(90.21deg, #4a2fbd -5.91%, #aa367c 111.58%);
+  border-radius: 100px;
+  transform-origin: 0%;
+  z-index: 10000;
+}
+
+@keyframes animateLine {
+  0% {
+    filter: hue-rotate(0);
+  }
+
+  100% {
+    filter: hue-rotate(360deg);
+  }
+}

@@ -7,8 +7,6 @@ import { sendMail } from "../middlewares/sendMail.js";
 export const login = async (req, res) => {
   try {
     const { userName, password } = req.body;
-
-    // find user
     const user = await User.findOne({ userName, password });
 
     if (!user) {
@@ -17,20 +15,18 @@ export const login = async (req, res) => {
         .json({ success: false, message: "Invalid Credentials" });
     }
 
-    // generate token on finding user and login
     const token = jwt.sign({ _id: user._id }, process.env.SECRET_KEY);
 
-    // Create cookie which expires in 24 jam
     res
       .status(200)
       .cookie("token", token, {
-        expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 jam
+        expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
         httpOnly: true,
         secure: true,
         sameSite: "none",
         domain:
           process.env.NODE_ENV === "production"
-            ? "inuldev.vercel.app" // Sesuaikan dengan domain Vercel Anda
+            ? "inuldev.vercel.app" // Gunakan domain vercel lengkap
             : "localhost",
       })
       .json({ success: true, message: "Logged In Successfully" });
@@ -41,7 +37,6 @@ export const login = async (req, res) => {
 
 export const logout = async (req, res) => {
   try {
-    // set cookie null and change expires to current time
     res
       .status(200)
       .cookie("token", null, {
@@ -49,6 +44,10 @@ export const logout = async (req, res) => {
         httpOnly: true,
         secure: true,
         sameSite: "none",
+        domain:
+          process.env.NODE_ENV === "production"
+            ? "inuldev.vercel.app" // Gunakan domain vercel lengkap
+            : "localhost",
       })
       .json({ success: true, message: "Logged Out Successfully" });
   } catch (error) {

@@ -14,7 +14,6 @@ import NavBar from "./components/NavBar/NavBar";
 import ProgressBar from "./components/ProgressBar/ProgressBar";
 import PreLoader from "./components/PreLoader/PreLoader";
 import DynamicTitle from "./components/SubComponents/DynamicTitle";
-// import Cursor from "./components/Cursor/Cursor";
 
 import HomePage from "./components/Pages/HomePage";
 import AboutMePage from "./components/Pages/AboutMePage";
@@ -57,11 +56,17 @@ const App = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      await dispatch(getUser());
-      await dispatch(loadUser());
-      await dispatch(incVisitCount());
-      // await dispatch({type: "CLEAR_ERROR"})
-      setLoading(false);
+      try {
+        setLoading(true);
+        await dispatch(getUser());
+        await dispatch(loadUser());
+        await dispatch(incVisitCount());
+      } catch (error) {
+        console.error("Failed to load user data:", error);
+        // Handle error appropriately
+      } finally {
+        setLoading(false);
+      }
     };
     loadData();
   }, [dispatch]);
@@ -72,7 +77,6 @@ const App = () => {
         <PreLoader />
       ) : (
         <>
-          {/* <Cursor /> */}
           <DynamicTitle />
           <ProgressBar />
 
@@ -134,7 +138,7 @@ const App = () => {
               <Route path="/view/feedbacks" element={<Feedbacks />} />
             </Route>
 
-            <Route path="*" element={<Navigate to="/login" />} />
+            <Route path="*" element={<Navigate to="/" />} />
           </Routes>
 
           <Footer user={user} />

@@ -7,12 +7,38 @@ const __dirname = path.dirname(__filename);
 
 export const loadConfig = () => {
   const environment = process.env.NODE_ENV || "development";
-  const configPath = path.join(__dirname, `config.${environment}.env`);
 
-  const result = dotenv.config({ path: configPath });
+  // Jika bukan di Vercel (development local), gunakan file .env
+  if (!process.env.VERCEL) {
+    const configPath = path.join(__dirname, `config.${environment}.env`);
+    const result = dotenv.config({ path: configPath });
 
-  if (result.error) {
-    throw new Error(`Error loading config file: ${result.error}`);
+    if (result.error) {
+      throw new Error(`Error loading config file: ${result.error}`);
+    }
+  }
+
+  // Verifikasi environment variables yang dibutuhkan
+  const requiredEnvVars = [
+    "PORT",
+    "MONGO_URI",
+    "SECRET_KEY",
+    "EMAIL",
+    "PASSWORD",
+    "CLOUDINARY_CLOUD_NAME",
+    "CLOUDINARY_API_KEY",
+    "CLOUDINARY_API_SECRET",
+    "FRONTEND_URL",
+  ];
+
+  const missingEnvVars = requiredEnvVars.filter(
+    (envVar) => !process.env[envVar]
+  );
+
+  if (missingEnvVars.length > 0) {
+    throw new Error(
+      `Missing required environment variables: ${missingEnvVars.join(", ")}`
+    );
   }
 
   return {

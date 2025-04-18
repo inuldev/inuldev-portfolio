@@ -1,12 +1,4 @@
-import axios from "axios";
-
-const client = axios.create({
-  withCredentials: true,
-  baseURL: process.env.REACT_APP_API_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
+import client from "../api/client";
 
 export const getUser = () => async (dispatch) => {
   try {
@@ -47,14 +39,20 @@ export const login = (userName, password) => async (dispatch) => {
       }
     );
 
+    // Jika token diterima dalam respons, simpan di localStorage sebagai fallback
+    if (data.token) {
+      localStorage.setItem("authToken", data.token);
+    }
+
     dispatch({
       type: "LOGIN_SUCCESS",
       payload: data.message,
     });
   } catch (error) {
+    console.error("Login error:", error);
     dispatch({
       type: "LOGIN_FAILURE",
-      payload: error.response.data.message,
+      payload: error.response?.data?.message || "Login failed",
     });
   }
 };
@@ -67,14 +65,18 @@ export const logout = () => async (dispatch) => {
 
     const { data } = await client.get("/admin/logout");
 
+    // Hapus token dari localStorage saat logout
+    localStorage.removeItem("authToken");
+
     dispatch({
       type: "LOGOUT_SUCCESS",
       payload: data.message,
     });
   } catch (error) {
+    console.error("Logout error:", error);
     dispatch({
       type: "LOGOUT_FAILURE",
-      payload: error.response.data.message,
+      payload: error.response?.data?.message || "Logout failed",
     });
   }
 };
@@ -83,6 +85,7 @@ export const loadUser = () => async (dispatch) => {
   try {
     dispatch({ type: "LOAD_USER_REQUEST" });
 
+    // Token akan ditambahkan otomatis oleh interceptor
     const { data } = await client.get("/admin/me");
 
     dispatch({
@@ -90,13 +93,18 @@ export const loadUser = () => async (dispatch) => {
       payload: data.user,
     });
   } catch (error) {
+    console.error("Load user error:", error);
+
+    // Jika error 401 atau 403, token mungkin tidak valid
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      localStorage.removeItem("authToken");
+      dispatch(logout());
+    }
+
     dispatch({
       type: "LOAD_USER_FAILURE",
       payload: error.response?.data?.message || "Authentication Failed",
     });
-    if (error.response?.status === 400) {
-      dispatch(logout());
-    }
   }
 };
 

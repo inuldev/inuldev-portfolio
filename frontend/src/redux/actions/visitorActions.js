@@ -1,12 +1,4 @@
-import axios from "axios";
-
-const client = axios.create({
-  withCredentials: true,
-  baseURL: process.env.REACT_APP_API_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
+import client from "../api/client";
 
 export const incVisitCount = () => async (dispatch) => {
   try {

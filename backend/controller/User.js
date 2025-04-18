@@ -6,51 +6,81 @@ import { sendMail } from "../middlewares/sendMail.js";
 
 export const login = async (req, res) => {
   try {
+    console.log("Login attempt for:", req.body.userName);
+    console.log("Request headers:", {
+      origin: req.headers.origin,
+      referer: req.headers.referer,
+      "user-agent": req.headers["user-agent"],
+    });
+
     const { userName, password } = req.body;
     const user = await User.findOne({ userName, password });
 
     if (!user) {
+      console.log("Login failed: Invalid credentials for", userName);
       return res
         .status(400)
         .json({ success: false, message: "Invalid Credentials" });
     }
 
+    console.log("Login successful for user:", user._id);
     const token = jwt.sign({ _id: user._id }, process.env.SECRET_KEY);
 
-    res
-      .status(200)
-      .cookie("token", token, {
-        expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        domain:
-          process.env.NODE_ENV === "production"
-            ? "inuldev.vercel.app" // Gunakan domain vercel lengkap
-            : "localhost",
-      })
-      .json({ success: true, message: "Logged In Successfully" });
+    // Konfigurasi cookie yang lebih sederhana dan kompatibel dengan cross-domain
+    const cookieOptions = {
+      expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      path: "/", // Pastikan cookie tersedia di seluruh aplikasi
+      // Hapus domain untuk menghindari masalah cross-domain
+    };
+
+    console.log("Setting cookie with options:", cookieOptions);
+
+    res.status(200).cookie("token", token, cookieOptions).json({
+      success: true,
+      message: "Logged In Successfully",
+      // Kirim token juga dalam respons untuk fallback jika cookie gagal
+      token: token,
+    });
+
+    console.log("Login response sent successfully");
   } catch (error) {
+    console.error("Login error:", error);
     return res.status(400).json({ success: false, message: error.message });
   }
 };
 
 export const logout = async (req, res) => {
   try {
+    console.log("Logout attempt");
+    console.log("Request headers:", {
+      origin: req.headers.origin,
+      referer: req.headers.referer,
+      "user-agent": req.headers["user-agent"],
+    });
+
+    // Konfigurasi cookie untuk logout
+    const cookieOptions = {
+      expires: new Date(0), // Expired langsung
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      path: "/", // Pastikan cookie dihapus dari seluruh aplikasi
+      // Hapus domain untuk menghindari masalah cross-domain
+    };
+
+    console.log("Clearing cookie with options:", cookieOptions);
+
     res
       .status(200)
-      .cookie("token", null, {
-        expires: new Date(Date.now()),
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        domain:
-          process.env.NODE_ENV === "production"
-            ? "inuldev.vercel.app" // Gunakan domain vercel lengkap
-            : "localhost",
-      })
+      .cookie("token", "", cookieOptions)
       .json({ success: true, message: "Logged Out Successfully" });
+
+    console.log("Logout response sent successfully");
   } catch (error) {
+    console.error("Logout error:", error);
     return res.status(400).json({ success: false, message: error.message });
   }
 };

@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import Title from "../SubComponents/Title";
 import SkillList from "../SubComponents/SkillList";
 import SkillCubeFace from "../SubComponents/SkillCubeFace";
@@ -51,7 +52,7 @@ const Skills = ({ skills, skillImages }) => {
       <div className="container">
         <div className="row">
           <div className="col-12">
-            <div
+            <motion.div
               className="skill-bx wow"
               variants={contVariant}
               initial="hidden"
@@ -65,8 +66,14 @@ const Skills = ({ skills, skillImages }) => {
                 txtVariant={txtVariant}
               />
 
-              <div className="skillcontainer">
-                <div className="skillcube" variants={cubeVariant}>
+              <motion.div
+                className="skillcontainer"
+                variants={cubeVariant}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+              >
+                <div className="skillcube">
                   <SkillCubeFace img={skillImages.image1.url} no={1} />
                   <SkillCubeFace img={skillImages.image2.url} no={2} />
                   <SkillCubeFace img={skillImages.image3.url} no={3} />
@@ -77,8 +84,8 @@ const Skills = ({ skills, skillImages }) => {
                 <div className="marquee">
                   <SkillList skills={skills} />
                 </div>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           </div>
         </div>
       </div>

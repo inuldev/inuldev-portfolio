@@ -29,6 +29,10 @@ const NavBar = () => {
 
   const logOutHandle = () => {
     dispatch(logout());
+    // Hapus token dari localStorage
+    localStorage.removeItem("authToken");
+    // Arahkan ke halaman login setelah logout
+    window.location.href = "/login";
   };
 
   useEffect(() => {

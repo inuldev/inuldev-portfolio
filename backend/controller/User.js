@@ -61,22 +61,39 @@ export const logout = async (req, res) => {
       "user-agent": req.headers["user-agent"],
     });
 
-    // Konfigurasi cookie untuk logout
-    const cookieOptions = {
-      expires: new Date(0), // Expired langsung
+    // Konfigurasi cookie untuk logout - menggunakan multiple cookie options untuk memastikan semua cookie dihapus
+    const cookieOptions1 = {
+      expires: new Date(0),
       httpOnly: true,
       secure: true,
       sameSite: "none",
-      path: "/", // Pastikan cookie dihapus dari seluruh aplikasi
-      // Hapus domain untuk menghindari masalah cross-domain
+      path: "/",
     };
 
-    console.log("Clearing cookie with options:", cookieOptions);
+    const cookieOptions2 = {
+      expires: new Date(0),
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      path: "/",
+    };
 
-    res
-      .status(200)
-      .cookie("token", "", cookieOptions)
-      .json({ success: true, message: "Logged Out Successfully" });
+    const cookieOptions3 = {
+      expires: new Date(0),
+      httpOnly: true,
+      secure: false,
+      path: "/",
+    };
+
+    console.log("Clearing cookies with multiple options");
+
+    // Hapus cookie dengan berbagai opsi untuk memastikan terhapus di semua browser dan kondisi
+    res.clearCookie("token");
+    res.cookie("token", "", cookieOptions1);
+    res.cookie("token", "", cookieOptions2);
+    res.cookie("token", "", cookieOptions3);
+
+    res.status(200).json({ success: true, message: "Logged Out Successfully" });
 
     console.log("Logout response sent successfully");
   } catch (error) {

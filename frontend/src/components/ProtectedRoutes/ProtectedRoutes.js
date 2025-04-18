@@ -3,7 +3,8 @@ import { Outlet, Navigate } from "react-router-dom";
 
 const ProtectedRoutes = ({ isAuthenticated }) => {
   if (!isAuthenticated) {
-    return <Navigate to="/login" />;
+    // Arahkan ke homepage, bukan ke halaman login
+    return <Navigate to="/" />;
   }
   return <Outlet />;
 };

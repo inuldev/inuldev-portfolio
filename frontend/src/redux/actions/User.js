@@ -98,7 +98,7 @@ export const loadUser = () => async (dispatch) => {
     // Jika error 401 atau 403, token mungkin tidak valid
     if (error.response?.status === 401 || error.response?.status === 403) {
       localStorage.removeItem("authToken");
-      dispatch(logout());
+      // Tidak memanggil dispatch(logout()) untuk menghindari redirect
     }
 
     dispatch({

@@ -29,10 +29,17 @@ const NavBar = () => {
 
   const logOutHandle = () => {
     dispatch(logout());
+
     // Hapus token dari localStorage
     localStorage.removeItem("authToken");
-    // Arahkan ke halaman login setelah logout
-    window.location.href = "/login";
+
+    // Hapus cookie secara manual dari browser
+    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    document.cookie =
+      "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=none;";
+
+    // Arahkan ke homepage setelah logout
+    window.location.href = "/";
   };
 
   useEffect(() => {

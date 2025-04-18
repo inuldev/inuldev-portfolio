@@ -27,22 +27,14 @@ client.interceptors.response.use(
     // Log error untuk debugging
     console.error("API Error:", error);
 
-    // Jika error 401 (Unauthorized) atau 403 (Forbidden), hapus token dan redirect ke login
+    // Jika error 401 (Unauthorized) atau 403 (Forbidden), hapus token tapi tidak redirect
     if (
       error.response &&
       (error.response.status === 401 || error.response.status === 403)
     ) {
-      console.log("Unauthorized access detected, redirecting to login");
+      console.log("Unauthorized access detected, clearing token");
       localStorage.removeItem("authToken");
-
-      // Cek apakah kita sudah berada di halaman login untuk menghindari redirect loop
-      const currentPath = window.location.pathname;
-      if (currentPath !== "/login") {
-        // Gunakan timeout untuk memastikan redirect terjadi setelah response handling selesai
-        setTimeout(() => {
-          window.location.href = "/login";
-        }, 100);
-      }
+      // Tidak ada redirect otomatis ke halaman login
     }
 
     return Promise.reject(error);

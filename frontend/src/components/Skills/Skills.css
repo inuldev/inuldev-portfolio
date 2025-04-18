@@ -1,6 +1,6 @@
 /************ Skills Css ************/
 .skill {
-  padding: 0 0 5rem 0;
+  padding: 0 0 10rem 0;
   position: relative;
 }
 
@@ -8,8 +8,8 @@
   background: #151515;
   border-radius: 6.4rem;
   text-align: center;
-  padding: 6rem 5rem;
-  margin-top: 6rem;
+  padding: 10rem 5rem;
+  margin-top: 10rem;
 }
 
 .skill h2 {
@@ -22,20 +22,20 @@
   font-size: 1.8rem;
   letter-spacing: 0.8px;
   line-height: 3rem;
-  margin: 1.4rem 0 7.5rem 0;
+  margin: 1.4rem 0 5rem 0;
 }
 
 .background-image-left {
-  top: -50%;
+  top: -100%;
   position: absolute;
   bottom: 0;
-  width: 40%;
+  width: 50%;
   z-index: -4;
 }
 
 .background-image-left.secimg {
   right: 0%;
-  top: -80%;
+  top: -100%;
   transform: rotateY(180deg);
 }
 
@@ -43,7 +43,7 @@
   width: 100%;
   display: grid;
   place-items: center;
-  margin-top: 120px;
+  margin-top: 100px;
 }
 
 .skillcube {
@@ -188,7 +188,7 @@
 
 @media screen and (max-width: 576px) {
   .skill {
-    padding: 0 6rem 5rem 6rem;
+    padding: 0 6rem 10rem 6rem;
   }
   .background-image-left {
     width: 80%;
@@ -198,7 +198,7 @@
 
 @media screen and (max-width: 470px) {
   .skill {
-    padding: 0 0 5rem 0;
+    padding: 0 0 10rem 0;
   }
 
   .skill-bx,

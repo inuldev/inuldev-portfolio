@@ -77,22 +77,39 @@ const App = () => {
   };
 
   useEffect(() => {
+    // Pastikan loading state diset ke true di awal
+    setLoading(true);
+
     const loadData = async () => {
       try {
-        setLoading(true);
+        console.log("Mulai loading data...");
 
         // Hapus cookie yang mungkin tertinggal
         clearOrphanedCookies();
 
-        await dispatch(getUser());
-        await dispatch(loadUser());
-        await dispatch(incVisitCount());
+        // Tambahkan delay minimal untuk memastikan preloader terlihat
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        // Load data secara paralel untuk mempercepat
+        await Promise.all([
+          dispatch(getUser()),
+          dispatch(loadUser()),
+          dispatch(incVisitCount()),
+        ]);
+
+        console.log("Data berhasil dimuat");
       } catch (error) {
         console.error("Failed to load user data:", error);
       } finally {
-        setLoading(false);
+        // Tambahkan delay kecil sebelum menghilangkan preloader
+        // untuk memastikan animasi preloader terlihat dengan baik
+        setTimeout(() => {
+          console.log("Menghilangkan preloader...");
+          setLoading(false);
+        }, 500);
       }
     };
+
     loadData();
   }, [dispatch]);
 

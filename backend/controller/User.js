@@ -56,76 +56,126 @@ export const logout = async (req, res) => {
   try {
     console.log("Logout attempt");
     console.log("Request headers:", {
+      host: req.headers.host,
       origin: req.headers.origin,
       referer: req.headers.referer,
       "user-agent": req.headers["user-agent"],
     });
 
-    // Hapus cookie dengan berbagai opsi untuk memastikan terhapus di semua browser dan kondisi
-
-    // 1. Hapus dengan clearCookie default
-    res.clearCookie("token");
-
-    // 2. Hapus dengan path / dan tanpa domain
-    res.clearCookie("token", { path: "/" });
-
-    // 3. Hapus dengan berbagai opsi SameSite
-    const baseOptions = {
-      expires: new Date(0),
-      httpOnly: true,
-      path: "/",
-    };
-
-    // Kombinasi secure dan sameSite
-    res.cookie("token", "", { ...baseOptions, secure: true, sameSite: "none" });
-    res.cookie("token", "", { ...baseOptions, secure: true, sameSite: "lax" });
-    res.cookie("token", "", {
-      ...baseOptions,
-      secure: true,
-      sameSite: "strict",
-    });
-    res.cookie("token", "", { ...baseOptions, secure: false });
-
-    // 4. Hapus dengan domain yang berbeda
-    if (process.env.NODE_ENV === "production") {
-      // Hapus dengan domain vercel
-      const domain =
-        req.headers.host.indexOf("vercel.app") > -1 ? ".vercel.app" : undefined;
-      if (domain) {
-        res.clearCookie("token", { domain });
-        res.cookie("token", "", {
-          ...baseOptions,
-          secure: true,
-          sameSite: "none",
-          domain,
-        });
-      }
-
-      // Hapus dengan domain dari origin header jika ada
-      if (req.headers.origin) {
-        try {
-          const originDomain = new URL(req.headers.origin).hostname;
-          res.clearCookie("token", { domain: originDomain });
-          res.cookie("token", "", {
-            ...baseOptions,
-            secure: true,
-            sameSite: "none",
-            domain: originDomain,
-          });
-        } catch (e) {
-          console.log("Error parsing origin:", e);
-        }
+    // Dapatkan domain dari host header
+    let domain = undefined;
+    if (req.headers.host) {
+      // Ekstrak domain dari host
+      const hostParts = req.headers.host.split(":")[0].split(".");
+      if (hostParts.length > 1) {
+        // Untuk domain seperti example.com atau sub.example.com
+        domain = hostParts.slice(-2).join(".");
       }
     }
 
-    // 5. Set header untuk menghapus cookie dari browser
-    res.setHeader("Set-Cookie", [
+    console.log("Detected domain:", domain);
+
+    // Dapatkan domain dari origin jika ada
+    let originDomain = undefined;
+    if (req.headers.origin) {
+      try {
+        const url = new URL(req.headers.origin);
+        originDomain = url.hostname;
+        console.log("Origin domain:", originDomain);
+      } catch (e) {
+        console.log("Error parsing origin:", e);
+      }
+    }
+
+    // Hapus cookie dengan berbagai konfigurasi
+    const cookieOptions = [
+      // Opsi dasar
+      { path: "/" },
+      { path: "/", expires: new Date(0) },
+
+      // Dengan domain
+      domain ? { path: "/", domain } : null,
+      domain ? { path: "/", domain, expires: new Date(0) } : null,
+
+      // Dengan origin domain
+      originDomain ? { path: "/", domain: originDomain } : null,
+      originDomain
+        ? { path: "/", domain: originDomain, expires: new Date(0) }
+        : null,
+
+      // Dengan secure dan sameSite
+      { path: "/", secure: true, sameSite: "none", expires: new Date(0) },
+      { path: "/", secure: true, sameSite: "lax", expires: new Date(0) },
+      { path: "/", secure: true, sameSite: "strict", expires: new Date(0) },
+      { path: "/", secure: false, expires: new Date(0) },
+
+      // Kombinasi domain dan secure
+      domain
+        ? {
+            path: "/",
+            domain,
+            secure: true,
+            sameSite: "none",
+            expires: new Date(0),
+          }
+        : null,
+      originDomain
+        ? {
+            path: "/",
+            domain: originDomain,
+            secure: true,
+            sameSite: "none",
+            expires: new Date(0),
+          }
+        : null,
+    ].filter(Boolean); // Hapus opsi null
+
+    console.log("Applying cookie clearing options:", cookieOptions);
+
+    // Hapus cookie dengan semua opsi
+    cookieOptions.forEach((options) => {
+      // Gunakan clearCookie untuk menghapus
+      res.clearCookie("token", options);
+
+      // Juga set cookie kosong dengan opsi yang sama
+      res.cookie("token", "", { ...options, httpOnly: true });
+    });
+
+    // Hapus juga dengan Set-Cookie header langsung
+    const setCookieHeaders = [
       "token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly",
       "token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; Secure; SameSite=None",
-    ]);
+    ];
+
+    // Tambahkan header dengan domain jika ada
+    if (domain) {
+      setCookieHeaders.push(
+        `token=; Path=/; Domain=${domain}; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly`
+      );
+      setCookieHeaders.push(
+        `token=; Path=/; Domain=${domain}; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; Secure; SameSite=None`
+      );
+    }
+
+    if (originDomain) {
+      setCookieHeaders.push(
+        `token=; Path=/; Domain=${originDomain}; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly`
+      );
+      setCookieHeaders.push(
+        `token=; Path=/; Domain=${originDomain}; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; Secure; SameSite=None`
+      );
+    }
+
+    res.setHeader("Set-Cookie", setCookieHeaders);
 
     console.log("Cookies cleared with multiple approaches");
-    res.status(200).json({ success: true, message: "Logged Out Successfully" });
+
+    // Tambahkan instruksi untuk frontend
+    res.status(200).json({
+      success: true,
+      message: "Logged Out Successfully",
+      clearCookieOptions: cookieOptions, // Kirim opsi ke frontend untuk digunakan
+    });
 
     console.log("Logout response sent successfully");
   } catch (error) {

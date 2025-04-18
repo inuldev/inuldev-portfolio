@@ -28,18 +28,63 @@ const NavBar = () => {
   };
 
   const logOutHandle = () => {
-    dispatch(logout());
-
     // Hapus token dari localStorage
     localStorage.removeItem("authToken");
 
-    // Hapus cookie secara manual dari browser
-    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    document.cookie =
-      "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=none;";
+    // Hapus cookie secara manual dari browser dengan berbagai opsi
+    const clearCookie = (name) => {
+      // Dapatkan domain saat ini
+      const domain = window.location.hostname;
+      const isLocalhost = domain === "localhost" || domain === "127.0.0.1";
+
+      // Opsi dasar
+      const options = [{ path: "/" }, { path: "/", domain: domain }];
+
+      // Jika bukan localhost, coba dengan domain yang lebih luas
+      if (!isLocalhost) {
+        // Coba dengan domain level atas (misalnya dari sub.example.com ke example.com)
+        const domainParts = domain.split(".");
+        if (domainParts.length > 2) {
+          const topDomain = domainParts.slice(-2).join(".");
+          options.push({ path: "/", domain: topDomain });
+        }
+
+        // Coba dengan domain dengan titik di depan (untuk subdomain)
+        options.push({ path: "/", domain: `.${domain}` });
+      }
+
+      // Tambahkan opsi secure dan sameSite
+      options.forEach((opt) => {
+        // Buat string cookie untuk setiap opsi
+        let cookieStr = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC;`;
+
+        if (opt.path) cookieStr += ` path=${opt.path};`;
+        if (opt.domain) cookieStr += ` domain=${opt.domain};`;
+
+        // Set cookie tanpa secure/samesite
+        document.cookie = cookieStr;
+        console.log("Clearing cookie:", cookieStr);
+
+        // Set cookie dengan secure
+        document.cookie = `${cookieStr} secure;`;
+
+        // Set cookie dengan secure dan berbagai samesite
+        document.cookie = `${cookieStr} secure; samesite=none;`;
+        document.cookie = `${cookieStr} secure; samesite=lax;`;
+        document.cookie = `${cookieStr} secure; samesite=strict;`;
+      });
+    };
+
+    // Hapus cookie token
+    clearCookie("token");
+
+    // Panggil API logout
+    dispatch(logout());
 
     // Arahkan ke homepage setelah logout
-    window.location.href = "/";
+    setTimeout(() => {
+      window.location.href = "/";
+    }, 300); // Beri waktu untuk API logout selesai
   };
 
   useEffect(() => {

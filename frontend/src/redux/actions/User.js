@@ -68,12 +68,62 @@ export const logout = () => async (dispatch) => {
     // Hapus token dari localStorage saat logout
     localStorage.removeItem("authToken");
 
+    // Jika backend mengirim opsi untuk menghapus cookie
+    if (data.clearCookieOptions && Array.isArray(data.clearCookieOptions)) {
+      console.log(
+        "Clearing cookies with options from backend",
+        data.clearCookieOptions
+      );
+
+      // Hapus cookie dengan JavaScript
+      const deleteCookie = (name, options) => {
+        let cookieString = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC;`;
+
+        if (options.path) {
+          cookieString += ` path=${options.path};`;
+        }
+
+        if (options.domain) {
+          cookieString += ` domain=${options.domain};`;
+        }
+
+        if (options.secure) {
+          cookieString += " secure;";
+        }
+
+        if (options.sameSite) {
+          cookieString += ` samesite=${options.sameSite.toLowerCase()};`;
+        }
+
+        document.cookie = cookieString;
+        console.log("Set cookie:", cookieString);
+      };
+
+      // Hapus dengan semua opsi yang dikirim dari backend
+      data.clearCookieOptions.forEach((options) => {
+        deleteCookie("token", options);
+      });
+    } else {
+      // Fallback jika backend tidak mengirim opsi
+      document.cookie =
+        "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      document.cookie =
+        "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=none;";
+    }
+
     dispatch({
       type: "LOGOUT_SUCCESS",
       payload: data.message,
     });
   } catch (error) {
     console.error("Logout error:", error);
+
+    // Hapus token dan cookie meskipun terjadi error
+    localStorage.removeItem("authToken");
+    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    document.cookie =
+      "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=none;";
+
     dispatch({
       type: "LOGOUT_FAILURE",
       payload: error.response?.data?.message || "Logout failed",

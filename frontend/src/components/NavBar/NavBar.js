@@ -34,6 +34,26 @@ const NavBar = () => {
   const logOutHandle = (e) => {
     e.preventDefault(); // Mencegah navigasi default
 
+    // Hapus token dari localStorage terlebih dahulu
+    localStorage.removeItem("authToken");
+
+    // Hapus cookie token dengan berbagai cara
+    const domain = window.location.hostname;
+    const isSecure = window.location.protocol === "https:";
+
+    // Opsi dasar
+    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+
+    // Dengan domain
+    document.cookie = `token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain};`;
+
+    // Dengan secure dan sameSite jika https
+    if (isSecure) {
+      document.cookie =
+        "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=none;";
+      document.cookie = `token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain}; secure; samesite=none;`;
+    }
+
     // Panggil action logout dari redux
     // Action logout akan menangani:
     // 1. Menghapus token dari localStorage

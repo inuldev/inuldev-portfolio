@@ -80,21 +80,63 @@ export const login = async (req, res) => {
  */
 export const logout = async (req, res) => {
   try {
-    // Konfigurasi cookie untuk menghapus token
+    console.log("Logout attempt in environment:", process.env.NODE_ENV);
+    console.log("Request headers:", {
+      host: req.headers.host,
+      origin: req.headers.origin,
+    });
+
+    // Dapatkan domain dari host header untuk production
+    let domain = undefined;
+    if (process.env.NODE_ENV === "production" && req.headers.host) {
+      const hostParts = req.headers.host.split(":")[0].split(".");
+      if (hostParts.length > 1) {
+        domain = hostParts.slice(-2).join(".");
+        console.log("Using domain for cookie:", domain);
+      }
+    }
+
+    // Konfigurasi dasar cookie untuk menghapus token
+    // Hindari menggunakan expires di clearCookie (deprecated)
     const cookieOptions = {
       httpOnly: true,
-      expires: new Date(0), // Set expired ke masa lalu
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       path: "/",
     };
 
+    // Tambahkan domain jika di production
+    if (domain) {
+      cookieOptions.domain = domain;
+    }
+
+    console.log("Clearing cookie with options:", cookieOptions);
+
     // Hapus cookie token
     res.clearCookie("token", cookieOptions);
+
+    // Untuk cookie setting, kita masih bisa menggunakan expires
+    const cookieSetOptions = {
+      ...cookieOptions,
+      expires: new Date(0), // Set expired ke masa lalu
+    };
+
+    // Tambahan: set cookie kosong dengan expires di masa lalu
+    res.cookie("token", "", cookieSetOptions);
+
+    // Tambahan: set header Set-Cookie langsung
+    const setCookieValue = `token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly${
+      process.env.NODE_ENV === "production" ? "; Secure; SameSite=None" : ""
+    }`;
+    res.setHeader("Set-Cookie", setCookieValue);
+
+    console.log("Set-Cookie header:", setCookieValue);
 
     return res.status(200).json({
       success: true,
       message: "Logout berhasil",
+      // Kirim informasi tambahan untuk frontend
+      clearCookieOptions: cookieOptions,
     });
   } catch (error) {
     console.error("Logout error:", error);

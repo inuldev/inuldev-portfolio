@@ -75,20 +75,41 @@ export const logout = () => async (dispatch) => {
     // Dispatch action untuk menandakan request logout dimulai
     dispatch({ type: "LOGOUT_REQUEST" });
 
+    // Hapus token dari localStorage terlebih dahulu
+    localStorage.removeItem("authToken");
+    console.log("Removed token from localStorage");
+
+    // Hapus cookie token dengan berbagai cara
+    const clearCookie = () => {
+      const domain = window.location.hostname;
+      const isSecure = window.location.protocol === "https:";
+
+      // Opsi dasar
+      document.cookie =
+        "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+
+      // Dengan domain
+      document.cookie = `token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain};`;
+
+      // Dengan secure dan sameSite jika https
+      if (isSecure) {
+        document.cookie =
+          "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=none;";
+        document.cookie = `token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain}; secure; samesite=none;`;
+      }
+
+      console.log("Cleared token cookie from browser");
+    };
+
+    // Hapus cookie sebelum request ke server
+    clearCookie();
+
     // Kirim request logout ke server
     const { data } = await client.get("/admin/logout");
+    console.log("Server logout response received");
 
-    // Hapus token dari localStorage
-    localStorage.removeItem("authToken");
-
-    // Hapus cookie token dengan cara sederhana
-    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-
-    // Tambahan untuk secure environments
-    if (window.location.protocol === "https:") {
-      document.cookie =
-        "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=none;";
-    }
+    // Hapus cookie lagi setelah respons server
+    clearCookie();
 
     // Dispatch action logout berhasil
     dispatch({
@@ -96,19 +117,44 @@ export const logout = () => async (dispatch) => {
       payload: data.message,
     });
 
-    // Arahkan ke homepage setelah logout
-    window.location.href = "/";
+    // Gunakan setTimeout untuk memastikan semua operasi selesai
+    setTimeout(() => {
+      // Hapus cookie sekali lagi sebelum redirect
+      clearCookie();
+
+      // Gunakan replace untuk menghindari history
+      window.location.replace("/");
+    }, 100);
   } catch (error) {
     console.error("Logout error:", error);
 
     // Hapus token dan cookie meskipun terjadi error
     localStorage.removeItem("authToken");
-    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 
-    if (window.location.protocol === "https:") {
+    // Gunakan fungsi clearCookie yang sama
+    const clearCookie = () => {
+      const domain = window.location.hostname;
+      const isSecure = window.location.protocol === "https:";
+
+      // Opsi dasar
       document.cookie =
-        "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=none;";
-    }
+        "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+
+      // Dengan domain
+      document.cookie = `token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain};`;
+
+      // Dengan secure dan sameSite jika https
+      if (isSecure) {
+        document.cookie =
+          "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=none;";
+        document.cookie = `token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain}; secure; samesite=none;`;
+      }
+
+      console.log("Cleared token cookie from browser (error handler)");
+    };
+
+    // Hapus cookie
+    clearCookie();
 
     // Dispatch action logout gagal
     dispatch({
@@ -116,8 +162,11 @@ export const logout = () => async (dispatch) => {
       payload: error.response?.data?.message || "Gagal logout",
     });
 
-    // Arahkan ke homepage meskipun terjadi error
-    window.location.href = "/";
+    // Gunakan setTimeout dan replace untuk menghindari masalah
+    setTimeout(() => {
+      clearCookie(); // Hapus cookie sekali lagi
+      window.location.replace("/");
+    }, 100);
   }
 };
 

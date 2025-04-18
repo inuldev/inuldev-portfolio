@@ -62,8 +62,12 @@ const App = () => {
   const clearOrphanedCookies = () => {
     // Cek apakah user sudah login dengan memeriksa localStorage
     const hasAuthToken = !!localStorage.getItem("authToken");
+    console.log(
+      "Checking for orphaned cookies, auth token exists:",
+      hasAuthToken
+    );
 
-    // Jika tidak ada token di localStorage tapi ada cookie token, hapus cookie
+    // Jika tidak ada token di localStorage, hapus cookie token
     if (!hasAuthToken) {
       const cookies = document.cookie.split(";");
       const hasTokenCookie = cookies.some((cookie) =>
@@ -73,15 +77,39 @@ const App = () => {
       if (hasTokenCookie) {
         console.log("Detected orphaned token cookie, clearing it");
 
-        // Hapus cookie dengan opsi sederhana
+        // Hapus cookie dengan berbagai cara
+        const domain = window.location.hostname;
+        const isSecure = window.location.protocol === "https:";
+
+        // Opsi dasar
         document.cookie =
           "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 
-        // Tambahan untuk secure environments
-        if (window.location.protocol === "https:") {
+        // Dengan domain
+        document.cookie = `token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain};`;
+
+        // Dengan secure dan sameSite jika https
+        if (isSecure) {
           document.cookie =
             "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=none;";
+          document.cookie = `token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain}; secure; samesite=none;`;
         }
+
+        // Jika bukan localhost, coba dengan domain level atas
+        const isLocalhost = domain === "localhost" || domain === "127.0.0.1";
+        if (!isLocalhost) {
+          const domainParts = domain.split(".");
+          if (domainParts.length > 2) {
+            const topDomain = domainParts.slice(-2).join(".");
+            document.cookie = `token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${topDomain};`;
+
+            if (isSecure) {
+              document.cookie = `token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${topDomain}; secure; samesite=none;`;
+            }
+          }
+        }
+
+        console.log("Cleared orphaned token cookie");
       }
     }
   };

@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import bcrypt from "bcrypt";
 
 const userSchema = new mongoose.Schema({
   name: String,
@@ -9,8 +10,9 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    select: false,
     required: [true, "Please Enter Password"],
+    select: false, // Tidak diselect secara default untuk keamanan
+    minlength: [6, "Password should be at least 6 characters"],
   },
 
   home: {
@@ -155,5 +157,31 @@ const userSchema = new mongoose.Schema({
     },
   ],
 });
+
+// Middleware untuk hash password sebelum disimpan
+userSchema.pre("save", async function (next) {
+  // Hanya hash password jika password dimodifikasi
+  if (!this.isModified("password")) return next();
+
+  try {
+    // Generate salt dengan cost factor 10
+    const salt = await bcrypt.genSalt(10);
+    // Hash password dengan salt
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Method untuk membandingkan password
+userSchema.methods.comparePassword = async function (candidatePassword) {
+  try {
+    // Gunakan bcrypt untuk membandingkan password
+    return await bcrypt.compare(candidatePassword, this.password);
+  } catch (error) {
+    throw new Error(error);
+  }
+};
 
 export const User = mongoose.model("User", userSchema);

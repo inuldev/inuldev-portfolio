@@ -4,183 +4,104 @@ import cloudinary from "cloudinary";
 import { User } from "../model/User.js";
 import { sendMail } from "../middlewares/sendMail.js";
 
+/**
+ * Login user dengan username dan password
+ * Menggunakan bcrypt untuk verifikasi password
+ * Mengembalikan JWT token dengan masa berlaku 24 jam
+ */
 export const login = async (req, res) => {
   try {
-    console.log("Login attempt for:", req.body.userName);
-    console.log("Request headers:", {
-      origin: req.headers.origin,
-      referer: req.headers.referer,
-      "user-agent": req.headers["user-agent"],
-    });
-
     const { userName, password } = req.body;
-    const user = await User.findOne({ userName, password });
 
-    if (!user) {
-      console.log("Login failed: Invalid credentials for", userName);
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid Credentials" });
+    // Validasi input
+    if (!userName || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Username dan password harus diisi",
+      });
     }
 
-    console.log("Login successful for user:", user._id);
-    const token = jwt.sign({ _id: user._id }, process.env.SECRET_KEY);
+    // Cari user berdasarkan username dan pastikan field password diselect
+    const user = await User.findOne({ userName }).select("+password");
 
-    // Konfigurasi cookie yang lebih sederhana dan kompatibel dengan cross-domain
-    const cookieOptions = {
-      expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      path: "/", // Pastikan cookie tersedia di seluruh aplikasi
-      // Hapus domain untuk menghindari masalah cross-domain
-    };
+    // Jika user tidak ditemukan
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "Username atau password salah",
+      });
+    }
 
-    console.log("Setting cookie with options:", cookieOptions);
+    // Verifikasi password dengan bcrypt
+    console.log("Verifying password for user:", user.userName);
+    console.log("Password from database exists:", !!user.password);
 
-    res.status(200).cookie("token", token, cookieOptions).json({
-      success: true,
-      message: "Logged In Successfully",
-      // Kirim token juga dalam respons untuk fallback jika cookie gagal
-      token: token,
+    const isPasswordValid = await user.comparePassword(password);
+    console.log("Password validation result:", isPasswordValid);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: "Username atau password salah",
+      });
+    }
+
+    // Buat token dengan expiry 24 jam
+    const token = jwt.sign({ _id: user._id }, process.env.SECRET_KEY, {
+      expiresIn: "24h",
     });
 
-    console.log("Login response sent successfully");
+    // Konfigurasi cookie
+    const cookieOptions = {
+      expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 jam
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // Secure hanya di production
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      path: "/",
+    };
+
+    // Kirim response dengan cookie dan token
+    return res.status(200).cookie("token", token, cookieOptions).json({
+      success: true,
+      message: "Login berhasil",
+      token: token, // Untuk fallback di client
+    });
   } catch (error) {
     console.error("Login error:", error);
-    return res.status(400).json({ success: false, message: error.message });
+    return res.status(500).json({
+      success: false,
+      message: "Terjadi kesalahan saat login",
+    });
   }
 };
 
+/**
+ * Logout user dengan menghapus token cookie
+ */
 export const logout = async (req, res) => {
   try {
-    console.log("Logout attempt");
-    console.log("Request headers:", {
-      host: req.headers.host,
-      origin: req.headers.origin,
-      referer: req.headers.referer,
-      "user-agent": req.headers["user-agent"],
-    });
+    // Konfigurasi cookie untuk menghapus token
+    const cookieOptions = {
+      httpOnly: true,
+      expires: new Date(0), // Set expired ke masa lalu
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      path: "/",
+    };
 
-    // Dapatkan domain dari host header
-    let domain = undefined;
-    if (req.headers.host) {
-      // Ekstrak domain dari host
-      const hostParts = req.headers.host.split(":")[0].split(".");
-      if (hostParts.length > 1) {
-        // Untuk domain seperti example.com atau sub.example.com
-        domain = hostParts.slice(-2).join(".");
-      }
-    }
+    // Hapus cookie token
+    res.clearCookie("token", cookieOptions);
 
-    console.log("Detected domain:", domain);
-
-    // Dapatkan domain dari origin jika ada
-    let originDomain = undefined;
-    if (req.headers.origin) {
-      try {
-        const url = new URL(req.headers.origin);
-        originDomain = url.hostname;
-        console.log("Origin domain:", originDomain);
-      } catch (e) {
-        console.log("Error parsing origin:", e);
-      }
-    }
-
-    // Hapus cookie dengan berbagai konfigurasi
-    const cookieOptions = [
-      // Opsi dasar
-      { path: "/" },
-      { path: "/", expires: new Date(0) },
-
-      // Dengan domain
-      domain ? { path: "/", domain } : null,
-      domain ? { path: "/", domain, expires: new Date(0) } : null,
-
-      // Dengan origin domain
-      originDomain ? { path: "/", domain: originDomain } : null,
-      originDomain
-        ? { path: "/", domain: originDomain, expires: new Date(0) }
-        : null,
-
-      // Dengan secure dan sameSite
-      { path: "/", secure: true, sameSite: "none", expires: new Date(0) },
-      { path: "/", secure: true, sameSite: "lax", expires: new Date(0) },
-      { path: "/", secure: true, sameSite: "strict", expires: new Date(0) },
-      { path: "/", secure: false, expires: new Date(0) },
-
-      // Kombinasi domain dan secure
-      domain
-        ? {
-            path: "/",
-            domain,
-            secure: true,
-            sameSite: "none",
-            expires: new Date(0),
-          }
-        : null,
-      originDomain
-        ? {
-            path: "/",
-            domain: originDomain,
-            secure: true,
-            sameSite: "none",
-            expires: new Date(0),
-          }
-        : null,
-    ].filter(Boolean); // Hapus opsi null
-
-    console.log("Applying cookie clearing options:", cookieOptions);
-
-    // Hapus cookie dengan semua opsi
-    cookieOptions.forEach((options) => {
-      // Gunakan clearCookie untuk menghapus
-      res.clearCookie("token", options);
-
-      // Juga set cookie kosong dengan opsi yang sama
-      res.cookie("token", "", { ...options, httpOnly: true });
-    });
-
-    // Hapus juga dengan Set-Cookie header langsung
-    const setCookieHeaders = [
-      "token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly",
-      "token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; Secure; SameSite=None",
-    ];
-
-    // Tambahkan header dengan domain jika ada
-    if (domain) {
-      setCookieHeaders.push(
-        `token=; Path=/; Domain=${domain}; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly`
-      );
-      setCookieHeaders.push(
-        `token=; Path=/; Domain=${domain}; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; Secure; SameSite=None`
-      );
-    }
-
-    if (originDomain) {
-      setCookieHeaders.push(
-        `token=; Path=/; Domain=${originDomain}; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly`
-      );
-      setCookieHeaders.push(
-        `token=; Path=/; Domain=${originDomain}; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; Secure; SameSite=None`
-      );
-    }
-
-    res.setHeader("Set-Cookie", setCookieHeaders);
-
-    console.log("Cookies cleared with multiple approaches");
-
-    // Tambahkan instruksi untuk frontend
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      message: "Logged Out Successfully",
-      clearCookieOptions: cookieOptions, // Kirim opsi ke frontend untuk digunakan
+      message: "Logout berhasil",
     });
-
-    console.log("Logout response sent successfully");
   } catch (error) {
     console.error("Logout error:", error);
-    return res.status(400).json({ success: false, message: error.message });
+    return res.status(500).json({
+      success: false,
+      message: "Terjadi kesalahan saat logout",
+    });
   }
 };
 
@@ -414,27 +335,59 @@ export const deleteFeedback = async (req, res) => {
 //     }
 // };
 
+/**
+ * Update username dan password user
+ * Password akan otomatis di-hash oleh middleware pre-save
+ */
 export const updateLoginDetails = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
-
-    // extract all new details and will use new function for arrays
+    const user = await User.findById(req.user._id).select("+password");
     const { userName, password } = req.body;
 
+    // Validasi input
+    if (!userName && !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Username atau password harus diisi",
+      });
+    }
+
+    // Update username jika ada
     if (userName) {
+      // Cek apakah username sudah digunakan
+      const existingUser = await User.findOne({ userName });
+      if (existingUser && existingUser._id.toString() !== user._id.toString()) {
+        return res.status(400).json({
+          success: false,
+          message: "Username sudah digunakan",
+        });
+      }
       user.userName = userName;
     }
+
+    // Update password jika ada
     if (password) {
+      if (password.length < 6) {
+        return res.status(400).json({
+          success: false,
+          message: "Password minimal 6 karakter",
+        });
+      }
       user.password = password;
     }
+
     await user.save();
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      message: "Login Credential Updated Successfully",
+      message: "Kredensial login berhasil diperbarui",
     });
   } catch (error) {
-    return res.status(400).json({ success: false, message: error.message });
+    console.error("Update login details error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Terjadi kesalahan saat memperbarui kredensial",
+    });
   }
 };
 

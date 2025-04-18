@@ -20,117 +20,110 @@ export const getUser = () => async (dispatch) => {
   }
 };
 
+/**
+ * Action untuk login user
+ * @param {string} userName - Username user
+ * @param {string} password - Password user
+ */
 export const login = (userName, password) => async (dispatch) => {
   try {
-    dispatch({
-      type: "LOGIN_REQUEST",
-    });
+    // Dispatch action untuk menandakan request login dimulai
+    dispatch({ type: "LOGIN_REQUEST" });
 
+    // Validasi input
+    if (!userName || !password) {
+      return dispatch({
+        type: "LOGIN_FAILURE",
+        payload: "Username dan password harus diisi",
+      });
+    }
+
+    // Kirim request login ke server
     const { data } = await client.post(
       "/admin/login",
-      {
-        userName,
-        password,
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
+      { userName, password },
+      { headers: { "Content-Type": "application/json" } }
     );
 
-    // Jika token diterima dalam respons, simpan di localStorage sebagai fallback
+    // Simpan token di localStorage sebagai fallback
     if (data.token) {
       localStorage.setItem("authToken", data.token);
     }
 
+    // Dispatch action login berhasil
     dispatch({
       type: "LOGIN_SUCCESS",
       payload: data.message,
     });
   } catch (error) {
     console.error("Login error:", error);
+
+    // Dispatch action login gagal
     dispatch({
       type: "LOGIN_FAILURE",
-      payload: error.response?.data?.message || "Login failed",
+      payload: error.response?.data?.message || "Gagal login",
     });
   }
 };
 
+/**
+ * Action untuk logout user
+ * Menghapus token dari localStorage dan cookie
+ */
 export const logout = () => async (dispatch) => {
   try {
-    dispatch({
-      type: "LOGOUT_REQUEST",
-    });
+    // Dispatch action untuk menandakan request logout dimulai
+    dispatch({ type: "LOGOUT_REQUEST" });
 
+    // Kirim request logout ke server
     const { data } = await client.get("/admin/logout");
 
-    // Hapus token dari localStorage saat logout
+    // Hapus token dari localStorage
     localStorage.removeItem("authToken");
 
-    // Jika backend mengirim opsi untuk menghapus cookie
-    if (data.clearCookieOptions && Array.isArray(data.clearCookieOptions)) {
-      console.log(
-        "Clearing cookies with options from backend",
-        data.clearCookieOptions
-      );
+    // Hapus cookie token dengan cara sederhana
+    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 
-      // Hapus cookie dengan JavaScript
-      const deleteCookie = (name, options) => {
-        let cookieString = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC;`;
-
-        if (options.path) {
-          cookieString += ` path=${options.path};`;
-        }
-
-        if (options.domain) {
-          cookieString += ` domain=${options.domain};`;
-        }
-
-        if (options.secure) {
-          cookieString += " secure;";
-        }
-
-        if (options.sameSite) {
-          cookieString += ` samesite=${options.sameSite.toLowerCase()};`;
-        }
-
-        document.cookie = cookieString;
-        console.log("Set cookie:", cookieString);
-      };
-
-      // Hapus dengan semua opsi yang dikirim dari backend
-      data.clearCookieOptions.forEach((options) => {
-        deleteCookie("token", options);
-      });
-    } else {
-      // Fallback jika backend tidak mengirim opsi
-      document.cookie =
-        "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    // Tambahan untuk secure environments
+    if (window.location.protocol === "https:") {
       document.cookie =
         "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=none;";
     }
 
+    // Dispatch action logout berhasil
     dispatch({
       type: "LOGOUT_SUCCESS",
       payload: data.message,
     });
+
+    // Arahkan ke homepage setelah logout
+    window.location.href = "/";
   } catch (error) {
     console.error("Logout error:", error);
 
     // Hapus token dan cookie meskipun terjadi error
     localStorage.removeItem("authToken");
     document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    document.cookie =
-      "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=none;";
 
+    if (window.location.protocol === "https:") {
+      document.cookie =
+        "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=none;";
+    }
+
+    // Dispatch action logout gagal
     dispatch({
       type: "LOGOUT_FAILURE",
-      payload: error.response?.data?.message || "Logout failed",
+      payload: error.response?.data?.message || "Gagal logout",
     });
+
+    // Arahkan ke homepage meskipun terjadi error
+    window.location.href = "/";
   }
 };
 
+/**
+ * Action untuk memuat data user yang sedang login
+ */
 export const loadUser = () => async (dispatch) => {
   try {
     dispatch({ type: "LOAD_USER_REQUEST" });
@@ -153,25 +146,32 @@ export const loadUser = () => async (dispatch) => {
 
     dispatch({
       type: "LOAD_USER_FAILURE",
-      payload: error.response?.data?.message || "Authentication Failed",
+      payload: error.response?.data?.message || "Gagal memuat data user",
     });
   }
 };
 
+/**
+ * Action untuk update username dan password user
+ * @param {string} userName - Username baru (opsional)
+ * @param {string} password - Password baru (opsional)
+ */
 export const updateLoginDetails = (userName, password) => async (dispatch) => {
   try {
-    dispatch({
-      type: "UPDATE_LOGIN_REQUEST",
-    });
+    // Validasi input
+    if (!userName && !password) {
+      return dispatch({
+        type: "UPDATE_LOGIN_FAILURE",
+        payload: "Username atau password harus diisi",
+      });
+    }
+
+    dispatch({ type: "UPDATE_LOGIN_REQUEST" });
 
     const { data } = await client.put(
       "/admin/update-login-details",
       { userName, password },
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
+      { headers: { "Content-Type": "application/json" } }
     );
 
     dispatch({
@@ -179,9 +179,10 @@ export const updateLoginDetails = (userName, password) => async (dispatch) => {
       payload: data.message,
     });
   } catch (error) {
+    console.error("Update login details error:", error);
     dispatch({
       type: "UPDATE_LOGIN_FAILURE",
-      payload: error.response.data.message,
+      payload: error.response?.data?.message || "Gagal memperbarui kredensial",
     });
   }
 };

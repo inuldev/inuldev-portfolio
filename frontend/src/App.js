@@ -55,7 +55,10 @@ const App = () => {
 
   const dispatch = useDispatch();
 
-  // Fungsi untuk menghapus cookie yang mungkin tertinggal
+  /**
+   * Fungsi untuk menghapus cookie token yang mungkin tertinggal
+   * Dijalankan saat aplikasi dimuat untuk membersihkan cookie yang tidak valid
+   */
   const clearOrphanedCookies = () => {
     // Cek apakah user sudah login dengan memeriksa localStorage
     const hasAuthToken = !!localStorage.getItem("authToken");
@@ -70,29 +73,14 @@ const App = () => {
       if (hasTokenCookie) {
         console.log("Detected orphaned token cookie, clearing it");
 
-        // Hapus cookie dengan berbagai opsi
-        const domain = window.location.hostname;
-        const isLocalhost = domain === "localhost" || domain === "127.0.0.1";
-
-        // Opsi dasar
+        // Hapus cookie dengan opsi sederhana
         document.cookie =
           "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        document.cookie = `token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain};`;
 
-        // Opsi dengan secure dan sameSite
-        document.cookie =
-          "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=none;";
-
-        if (!isLocalhost) {
-          // Coba dengan domain level atas
-          const domainParts = domain.split(".");
-          if (domainParts.length > 2) {
-            const topDomain = domainParts.slice(-2).join(".");
-            document.cookie = `token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${topDomain};`;
-          }
-
-          // Coba dengan domain dengan titik di depan
-          document.cookie = `token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${domain};`;
+        // Tambahan untuk secure environments
+        if (window.location.protocol === "https:") {
+          document.cookie =
+            "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=none;";
         }
       }
     }

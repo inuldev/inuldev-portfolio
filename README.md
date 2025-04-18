@@ -60,7 +60,8 @@ Aplikasi ini adalah portfolio pribadi yang memungkinkan pemiliknya untuk menampi
 
   - Node.js dengan Express
   - MongoDB dengan Mongoose ODM
-  - JWT untuk autentikasi
+  - JWT untuk autentikasi dengan expiry time
+  - Bcrypt untuk password hashing
   - Cookie Parser untuk manajemen cookie
   - CORS untuk keamanan cross-origin
   - Request-IP untuk pelacakan pengunjung
@@ -91,6 +92,8 @@ mern-portfolio/
 │   ├── middlewares/        # Middleware untuk rute API
 │   ├── model/              # Model data MongoDB
 │   ├── routes/             # Rute API
+│   ├── scripts/            # Script utilitas
+|   |   └── generate-password-hash.js # Script untuk generate password hash
 │   ├── app.js              # Konfigurasi server
 │   └── server.js           # Entry point server
 │
@@ -108,11 +111,15 @@ mern-portfolio/
         │   ├── NavBar/     # Komponen navigasi
         │   ├── Pages/      # Komponen halaman utama
         │   ├── Projects/   # Komponen proyek
+        │   ├── ProtectedRoutes/ # Komponen untuk rute terproteksi
         │   ├── Skills/     # Komponen skills
         │   └── VisitorStat/ # Komponen statistik pengunjung
         ├── redux/          # State management
         │   ├── actions/    # Redux actions
+        │   ├── api/        # Konfigurasi API client
         │   └── reducers/   # Redux reducers
+        ├── utils/          # Fungsi utilitas
+        │   └── authUtils.js # Utilitas untuk autentikasi
         ├── App.js          # Komponen utama React
         └── index.js        # Entry point React
 ```
@@ -218,9 +225,18 @@ Contoh pembuatan user admin melalui MongoDB Shell:
 db.users.insertOne({
   name: "Nama Admin",
   userName: "admin",
-  password: "password_admin",
+  password: "$2b$10$X5mFk4TFXhp5hNi5Y.iAYOc0jK5OwpZ.Jg8eiTHkMFQVLcfxjy7yO", // Hash dari "password123"
 });
 ```
+
+Atau Anda dapat menggunakan script yang disediakan untuk menghasilkan hash password:
+
+```bash
+# Di direktori backend
+node scripts/generate-password-hash.js
+```
+
+Kemudian gunakan hash yang dihasilkan untuk memperbarui password di database.
 
 ## Model Data
 
@@ -249,12 +265,15 @@ Aplikasi ini dapat di-deploy menggunakan layanan seperti:
 
 ## Fitur Keamanan
 
-- **JWT Authentication**: Autentikasi menggunakan JSON Web Tokens dengan expiry time
+- **JWT Authentication**: Autentikasi menggunakan JSON Web Tokens dengan expiry time 24 jam
+- **Password Hashing**: Menggunakan bcrypt untuk menyimpan password dengan aman
 - **Secure Cookies**: Cookie dengan flag httpOnly dan secure (di production)
+- **Centralized Auth Logic**: Logika autentikasi terpusat di utils/authUtils.js
 - **CORS Protection**: Konfigurasi CORS yang aman untuk mencegah akses tidak sah
 - **Protected Routes**: Penggunaan React Router untuk melindungi rute admin
 - **Input Validation**: Validasi input di sisi server dan client
 - **Error Handling**: Penanganan error yang terstandarisasi
+- **Token Expiry**: Token JWT dengan masa berlaku yang jelas
 
 ## Fitur UI/UX
 
@@ -265,6 +284,32 @@ Aplikasi ini dapat di-deploy menggunakan layanan seperti:
 - **Progress Bar**: Indikator navigasi halaman
 - **Mobile Navigation**: Bottom bar untuk navigasi di perangkat mobile
 
+## Sistem Autentikasi
+
+Aplikasi ini menggunakan sistem autentikasi yang aman dan terstruktur:
+
+### Backend
+
+- **Password Hashing**: Menggunakan bcrypt untuk menyimpan password dengan aman
+- **JWT dengan Expiry**: Token JWT dengan masa berlaku 24 jam
+- **Secure Cookies**: Cookie dengan flag httpOnly dan secure di production
+- **Middleware Autentikasi**: Middleware untuk memverifikasi token dari cookie atau header Authorization
+- **Error Handling**: Penanganan error yang spesifik untuk berbagai kasus autentikasi
+
+### Frontend
+
+- **Centralized Auth Logic**: Logika autentikasi terpusat di `utils/authUtils.js`
+- **Token Storage**: Token disimpan di cookie (utama) dan localStorage (fallback)
+- **Protected Routes**: Komponen `ProtectedRoutes` untuk melindungi rute admin
+- **Axios Interceptors**: Interceptor untuk menambahkan token ke semua request
+- **Auto Logout**: Penanganan otomatis untuk token yang tidak valid atau kadaluarsa
+
+### Fitur Tambahan
+
+- **Script Generate Password**: Script untuk menghasilkan hash password
+- **Cookie Cleanup**: Pembersihan cookie yang tertinggal saat aplikasi dimuat
+- **Cross-Domain Support**: Dukungan untuk cookie di berbagai domain dan lingkungan
+
 ## Catatan Penting
 
 - Pastikan untuk mengatur CORS di backend jika frontend dan backend di-deploy di domain yang berbeda
@@ -272,3 +317,4 @@ Aplikasi ini dapat di-deploy menggunakan layanan seperti:
 - Pastikan MongoDB Anda dapat diakses dari server tempat Anda men-deploy aplikasi
 - Jangan lupa untuk mengubah NODE_ENV menjadi 'production' saat di-deploy ke production
 - Perhatikan batas ukuran upload gambar (50MB) saat menggunakan Cloudinary
+- Untuk mengubah password admin, gunakan script `generate-password-hash.js` untuk menghasilkan hash

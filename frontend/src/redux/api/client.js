@@ -1,4 +1,5 @@
 import axios from "axios";
+import { clearAuthData } from "../../utils/authUtils";
 
 /**
  * Konfigurasi Axios client untuk API calls
@@ -58,28 +59,9 @@ client.interceptors.response.use(
     if (error.response.status === 401 || error.response.status === 403) {
       console.log("Unauthorized access detected, clearing token");
 
-      // Hapus token dari localStorage
-      localStorage.removeItem("authToken");
-
-      // Hapus cookie token dengan berbagai cara
-      const domain = window.location.hostname;
-      const isSecure = window.location.protocol === "https:";
-
-      // Opsi dasar
-      document.cookie =
-        "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-
-      // Dengan domain
-      document.cookie = `token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain};`;
-
-      // Dengan secure dan sameSite jika https
-      if (isSecure) {
-        document.cookie =
-          "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=none;";
-        document.cookie = `token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain}; secure; samesite=none;`;
-      }
-
-      console.log("Cleared token cookie due to auth error");
+      // Hapus token dan cookie
+      clearAuthData();
+      console.log("Auth data cleared due to auth error");
 
       // Tidak ada redirect otomatis ke halaman login
       // Sesuai dengan preferensi user untuk portfolio pribadi

@@ -6,8 +6,8 @@ import { NavLink } from "react-router-dom";
 import { RiUserSharedFill, RiAdminFill } from "react-icons/ri";
 import { BiLogOutCircle } from "react-icons/bi";
 import { useDispatch, useSelector } from "react-redux";
-
 import { logout } from "../../redux/actions/User";
+import { clearAuthData } from "../../utils/authUtils";
 
 import "./NavBar.css";
 
@@ -34,32 +34,14 @@ const NavBar = () => {
   const logOutHandle = (e) => {
     e.preventDefault(); // Mencegah navigasi default
 
-    // Hapus token dari localStorage terlebih dahulu
-    localStorage.removeItem("authToken");
-
-    // Hapus cookie token dengan berbagai cara
-    const domain = window.location.hostname;
-    const isSecure = window.location.protocol === "https:";
-
-    // Opsi dasar
-    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-
-    // Dengan domain
-    document.cookie = `token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain};`;
-
-    // Dengan secure dan sameSite jika https
-    if (isSecure) {
-      document.cookie =
-        "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=none;";
-      document.cookie = `token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain}; secure; samesite=none;`;
-    }
+    // Hapus token dan cookie terlebih dahulu
+    clearAuthData();
 
     // Panggil action logout dari redux
     // Action logout akan menangani:
-    // 1. Menghapus token dari localStorage
-    // 2. Menghapus cookie
-    // 3. Memanggil API logout
-    // 4. Redirect ke homepage
+    // 1. Memanggil API logout
+    // 2. Menghapus token dan cookie lagi
+    // 3. Redirect ke homepage
     dispatch(logout());
   };
 

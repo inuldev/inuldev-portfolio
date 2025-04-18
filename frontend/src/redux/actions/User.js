@@ -1,4 +1,5 @@
 import client from "../api/client";
+import { clearAuthCookies, clearAuthData } from "../../utils/authUtils";
 
 export const getUser = () => async (dispatch) => {
   try {
@@ -75,41 +76,17 @@ export const logout = () => async (dispatch) => {
     // Dispatch action untuk menandakan request logout dimulai
     dispatch({ type: "LOGOUT_REQUEST" });
 
-    // Hapus token dari localStorage terlebih dahulu
-    localStorage.removeItem("authToken");
-    console.log("Removed token from localStorage");
-
-    // Hapus cookie token dengan berbagai cara
-    const clearCookie = () => {
-      const domain = window.location.hostname;
-      const isSecure = window.location.protocol === "https:";
-
-      // Opsi dasar
-      document.cookie =
-        "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-
-      // Dengan domain
-      document.cookie = `token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain};`;
-
-      // Dengan secure dan sameSite jika https
-      if (isSecure) {
-        document.cookie =
-          "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=none;";
-        document.cookie = `token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain}; secure; samesite=none;`;
-      }
-
-      console.log("Cleared token cookie from browser");
-    };
-
-    // Hapus cookie sebelum request ke server
-    clearCookie();
+    // Hapus token dan cookie sebelum request ke server
+    clearAuthData();
+    console.log("Auth data cleared before server request");
 
     // Kirim request logout ke server
     const { data } = await client.get("/admin/logout");
     console.log("Server logout response received");
 
     // Hapus cookie lagi setelah respons server
-    clearCookie();
+    clearAuthCookies();
+    console.log("Auth cookies cleared after server response");
 
     // Dispatch action logout berhasil
     dispatch({
@@ -120,7 +97,8 @@ export const logout = () => async (dispatch) => {
     // Gunakan setTimeout untuk memastikan semua operasi selesai
     setTimeout(() => {
       // Hapus cookie sekali lagi sebelum redirect
-      clearCookie();
+      clearAuthCookies();
+      console.log("Auth cookies cleared before redirect");
 
       // Gunakan replace untuk menghindari history
       window.location.replace("/");
@@ -129,32 +107,8 @@ export const logout = () => async (dispatch) => {
     console.error("Logout error:", error);
 
     // Hapus token dan cookie meskipun terjadi error
-    localStorage.removeItem("authToken");
-
-    // Gunakan fungsi clearCookie yang sama
-    const clearCookie = () => {
-      const domain = window.location.hostname;
-      const isSecure = window.location.protocol === "https:";
-
-      // Opsi dasar
-      document.cookie =
-        "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-
-      // Dengan domain
-      document.cookie = `token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain};`;
-
-      // Dengan secure dan sameSite jika https
-      if (isSecure) {
-        document.cookie =
-          "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=none;";
-        document.cookie = `token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain}; secure; samesite=none;`;
-      }
-
-      console.log("Cleared token cookie from browser (error handler)");
-    };
-
-    // Hapus cookie
-    clearCookie();
+    clearAuthData();
+    console.log("Auth data cleared in error handler");
 
     // Dispatch action logout gagal
     dispatch({
@@ -164,7 +118,8 @@ export const logout = () => async (dispatch) => {
 
     // Gunakan setTimeout dan replace untuk menghindari masalah
     setTimeout(() => {
-      clearCookie(); // Hapus cookie sekali lagi
+      clearAuthCookies(); // Hapus cookie sekali lagi
+      console.log("Auth cookies cleared before redirect (error handler)");
       window.location.replace("/");
     }, 100);
   }
